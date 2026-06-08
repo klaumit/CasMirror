@@ -1,0 +1,46 @@
+HTM2PV 3.2b2 (03.06.01)
+
+DISCLAIMER:
+-----------
+ACHTUNG: BETAVERSION
+
+HTM2PV   ist  Freeware  und   kann
+beliebig weiterverbreitet werden.
+Sollte Euch das Programm  besonders
+gute gefallen würde ich mich jedoch
+über eine Spende an eine wohltätige
+Organisation eurer Wahl freuen.
+Den Betrag könnt Ihr natürlich frei
+wählen.
+Wem    nun   auf    Anhieb    keine 
+Organisation  einfällt,  dem    sei
+www.Kinderkrebshilfe.de  ans   Herz 
+gelegt.   Dort  gibt  es  auch  die
+Möglichkeit online zu spenden.
+Über eine kurze Mail an
+b.lutz@online.de würde ich mich in
+einem, solchen Fall sehr freuen.
+
+INSTALLATION:
+-------------
+Alle   Dateien  in ein  Verzeichnis
+entpacken. Anschließen muss in  der  
+Datei htm2pv.ini noch die Serielle-
+Schnittstelle(COM-Port) eingestellt
+werden, an die der PV angeschlossen
+ist. 
+
+[Die Datei  	perlcrt.dll     ist 
+erforderlich,     da  das  Programm
+htm2pv.exe  in  Perl   programmiert
+wurde  und mittels perl2exe in eine
+ausführbare Windows-Exe kompilliert
+wurde.]
+
+[MiniBook wurde von Pu Bo entwickelt 
+(http://minibook.freeservers.com)]
+
+
+
+Doch nun viel Spaß mit HTM2PV 
+Bernd
