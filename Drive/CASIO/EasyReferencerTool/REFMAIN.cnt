@@ -1,0 +1,30 @@
+:Base REFMAIN.HLP
+:Title Easy Referencer Tool für PV
+1 Allgemeines
+2 Copyright=IDH_Copyright
+2 Einführung=IDH_Einfuehrung
+2 Legende der verwendeten Symbole=IDH_Legende
+1 Arbeiten mit Easy Referencer Tool
+2 Die Referencer-Datei=IDH_Referencer-Datei
+2 Einen Dateinamen für das CASIO Gerät wählen=IDH_Dateiname
+2 Ein Kapitel erstellen=IDH_Kapitel
+2 Eine Verknüpfung erstellen=IDH_Verknuepfung
+2 Ein Pop-up erstellen=IDH_Pop-up
+2 Ein Bild einfügen=IDH_Bild
+2 Eine Zwischenüberschrift einfügen=IDH_Zwischenueberschrift
+2 Möglichkeiten der Textgestaltung=IDH_Textgestaltung
+2 Das Ende einer Datenbank kennzeichnen=IDH_Ende
+2 Eine Versionsnummer zuweisen=IDH_Versionsnummer
+2 CSV-Format=IDH_CSV
+2 Die Konvertierung=IDH_Konvertierung
+1 Beispiel
+2 Die Beispieldatei=IDH_Beispiel
+2 Auflistung der einzelnen Kapitel auf dem CASIO Gerät=IDH_Liste
+2 Formatierungen im Kapitel "Booking a Flight"=IDH_Booking
+2 Formatierungen im Pop-up-Thema "Airport code"=IDH_Airport
+2 Formatierungen im Kapitel "Created By..."=IDH_Created
+2 Abschließende Formatierungen in der Beispieldatei=IDH_abschliessende_Formatierung
+2 Alle Formatierungsregeln auf einen Blick=IDH_Formatierung
+2 Häufig gestellte Fragen=IDH_FAQ
+2 Die Konvertierung=IDH_Beispiel_Konvert
+2 Übertragung zum CASIO Gerät=IDH_Uebertragung
