@@ -1,0 +1,740 @@
+PV-OS 1600 Analyzer; Copyright (c) 2004 by O'Razoff. V1.0
+
+This program is designed to analyze the structure of PV-OS 1600 files in BIN format.
+
+Program usage:
+
+pvosa [-p] [-f] file.in file.out
+-p extract PVAs [no]
+-f extract files [no]
+
+The input file (file.in) is expected to be a PV-OS 1600 file in BIN format,
+and the output file (file.out) is a text file containing the analysis of the input file's structures.
+
+All flags are optional, so the program can also be run as follows:
+
+pvosa file.in file.out
+
+In this case, an output text file is created, and the modules are not extracted.
+
+
+Description of program switches.
+
+The -P (PVA extract) switch enables the extraction of PVA files detected via
+signatures. This may be required to extract modules from an OS emulator
+image that uses a non-standard format.
+Example of switch usage:
+
+pvosa -p pvossim.bin pvossim.txt
+
+The extracted PVA modules have names in the following format: 0012ABC0.PVA, where 0012ABC0
+corresponds to the hexadecimal offset of the file within the input
+PVOS file.
+
+The -F (Files extract) flag enables the extraction of files found in the root
+directory (master file list) of the input PV-OS 1600 image file. This may
+be useful for analyzing their structure. Filenames are truncated at the beginning
+to the maximum DOS filename length of 8 characters; for example, libdriver.sys
+will be extracted as ibdriver.sys. The correct filenames can be viewed in the
+output text file within the root directory section.
+Example of flag usage:
+
+pvosa -f pvos103.bin pvos103.txt
+
+For the PV-OS 1600 emulator, using this flag is not recommended because
+the file layout within the image does not correspond to the entries in the
+root directory.
+
+
+Program messages.
+
+Upon successful completion, the program generates output files and issues no
+messages. In the event of various errors, the program may issue the following
+messages:
+
+I/O error. 	- Input/output error (opening or creating a file,
+reading from or writing to a file).
+
+In the event of incorrect command-line syntax, the program issues the following message:
+
+pvosa [-p] [-f] file.in file.out
+-p extract PVA's [no]
+-f extract files [no]
+
+
+Output file format.
+
+It should be noted that the structures listed below are the result of my own
+analysis, as Casio refused to provide this information and I have not found
+it anywhere else. Where a question mark appears at the end of a line, I am
+unsure of the element's meaning; where there is simply a '?', I did not
+understand it. If you have more information than I do, please send it to
+razoff@mail.ru; it will be incorporated into the next version of the program.
+
+Each structure in the output file begins with a header in the following format:
+
+----------------------------------------------------------------
+File offset: 002648B0h		- offset from the beginning of the file
+Data end			- structure type
+----------------------------------------------------------------
+
+Data start and end structures.
+
+These indicate the location within the input file where specific data begins or ends. The underlying principle is that free (unallocated) space in the PVOS image file is filled with the hexadecimal byte value FF, while the start of any data block is typically aligned to a 16-byte boundary.
+
+The data start structure is as follows:
+
+----------------------------------------------------------------
+File offset: 00000000h
+Data begin
+----------------------------------------------------------------
+0000h: 43 41 53 49 4F 50 56 4F 53 32 30 30 55 AA 02 00 	CASIOPVOS200Uк..
+0010h: 00 00 20 00 00 00 1D 80 00 00 00 00 00 00 00 04 	.. ....А........
+----------------------------------------------------------------
+
+Here, the structure type is "Data begin," followed by a dump of the first 32 bytes of the detected data.
+
+The data end structure looks like this:
+
+----------------------------------------------------------------
+File offset: 00000040h
+Data end
+----------------------------------------------------------------
+0000h: 00 00 01 80 00 00 00 80 47 35 30 32 FF FF FF FF 	...А...АG502
+0010h: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+----------------------------------------------------------------
+
+Here, the structure type is listed as "Data end," followed by a hex dump
+of the last 16 bytes of the detected data and the 16 bytes immediately following them.
+
+
+PV-OS primary header (boot sector?) structure.
+
+It appears twice in the file, at hex offsets 0 and 800. It looks
+as follows:
+
+----------------------------------------------------------------
+File offset: 00000000h
+PV OS header
+----------------------------------------------------------------
+Checksum: BA2Eh
+0000h: PVOS signature		CASIOPVOS200Uк
+000Ch: Syncword			55AAh
+000Eh: Bytes per sector?	0200h
+0010h: Allocated sectors?	00002000h, 00400000h
+0014h: OS image length?		00001D80h, 003B0000h
+0018h: First boot start?	00000000h, 00000000h
+001Ch: Second boot start?	00000004h, 00000800h
+0020h: Root directory start	00000420h, 00084000h
+0024h: Some directory start?	00000440h, 00088000h
+0028h: Root directory length	00000020h, 00004000h
+002Ch: Some directory length?	00000020h, 00004000h
+0030h: ?			00000400h, 00080000h
+0034h: OS load address?		8C024800h, 00004A00h
+0038h: OS start address?	8C024800h, 00004A00h
+003Ch: ?			00001E80h, 003D0000h
+0040h: ?			00000180h, 00030000h
+0044h: ?			00000080h, 00010000h
+0048h: Some signature?		G502
+01FEh: Checksum			BA2Eh
+----------------------------------------------------------------
+
+The structure type is listed here as "PV OS header," followed by the calculated
+structure checksum (Checksum: BA2Eh) and then a description of the structure elements.
+At the beginning of each line, the first word represents the hexadecimal offset
+of the element from the start of the structure (not from the start of the file).
+The second column lists the presumed purpose of the structure elements; the third
+shows the value taken from the file; and the fourth (if present), separated by a
+comma, provides an interpretation of that value.
+
+PVOS signature.
+
+Located at the very beginning of the structure, this consists of the 12-byte
+string "CASIOPVOS200".
+
+Sync word.
+
+Located at hexadecimal offset 0C, this consists of the hexadecimal word 55AA—
+a value traditionally used in many operating systems and BIOS implementations
+to mark the beginning or end of system headers, tables, or boot sectors.
+
+The word at offset 0x0E is always 0x200 (512 decimal) and is most logically interpreted (given the subsequent fields) as the number of bytes per sector (the unit of space allocation in the PV-OS image).
+
+The doubleword at offset 0x10 is most logically interpreted as the number of sectors allocated (or required for allocation) on the storage medium (in this case, flash memory) to hold the operating system. In all PV-OS images examined, this value is 0x2000.
+
+The doubleword at offset 0x14 is interpreted almost certainly as the length of the PV-OS image in sectors. When multiplied by 512 (the fourth column), it matches the length of the PV-OS image file exactly, down to the byte.
+
+The doubleword at offset 0x18 is always 0. Its exact purpose is unclear. By analogy with the following word (0x1C), it could be interpreted as the address of the first copy of the primary header (boot sector?) of the PV-OS.
+
+The doubleword at offset 1Ch (hexadecimal) is most logically interpreted
+as the address of the second copy of the PV-OS primary header (boot sector).
+When multiplied by 512 (fourth column), it matches—down to the byte—the
+offset to the second copy of the PV-OS primary header. However, this
+could be a coincidence.
+
+The doubleword at offset 20h (hexadecimal) is most logically interpreted
+as the offset (in sectors) from the beginning of the PV-OS image file to the
+root directory (master list) of embedded PV-OS files (executable modules,
+drivers, resources). The fourth column lists the value of the word multiplied
+by 512—that is, the offset in bytes.
+
+By analogy with the previous one, the doubleword at offset 24h (hexadecimal)
+can be interpreted as the offset (in sectors) from the beginning of the PV-OS
+image file to a secondary directory (file list), because its value
+corresponds to the end of the preceding root directory. In an actual PV-OS
+image file, there is no data between this offset (88000h) and 8C000h — a span
+of 4000h bytes (the length of the root directory; see below). The fourth
+column lists the value of the word multiplied by 512 — that is, the offset in bytes.
+
+The doubleword at offset 28h (hexadecimal) is most logically interpreted
+as the length (in sectors) of the root directory (master list) of embedded
+PV-OS files (executable modules, drivers, resources). In any case, its
+value corresponds exactly to the difference between the two preceding
+words—that is, the end and the beginning of the root directory. 
+
+The fourth column lists the value of the word multiplied by 512 — that is, the size in bytes.
+
+The doubleword at offset 2Ch can—by analogy with the previous one—be interpreted as the length (in sectors) of the secondary directory (file list). In any case, its value corresponds exactly to the difference between the start of the resource area (see below) and the value of the doubleword at offset 24h. The fourth column lists the word's value multiplied by 512—that is, the size in bytes.
+
+The doubleword at offset 30h is always equal to 400h. Its purpose is unclear.
+
+The doublewords at offsets 34h and 38h are equal to each other; they are most logically interpreted as the operating system's load/start addresses. Indeed, if one assigns the address contained in these doublewords to the start of the PV-OS code (file offset 4A00h) during disassembly, all absolute addresses within the code resolve correctly.
+The fourth column for these words shows the corresponding file offset; for instance, in the example above, the address 8C024800h corresponds to file offset 4A00h.
+
+The purpose of the doublewords at offsets 3Ch, 40h, and 44h is unclear.
+
+A four-byte signature, "G502", is located at offset 48h. Its purpose is unclear. A similar signature, "G500", appears in the PV-OS for the Casio PV-S x50/x60. This may be an internal designation for the specific model for which the PV-OS was created.
+
+The area following this, up to offset 1FEh, is filled with FFh; at offset 1FEh, the hexadecimal checksum word for the primary header is stored. This checksum is calculated as the simple sum of the first 510 bytes, treated as words (with the high byte zero-extended).
+
+The remaining space within the 800h-byte primary header is unused and filled with FFh.
+
+
+PV-OS secondary header structure.
+
+It is located in the file at offset 4000h. Its structure is as follows:
+
+----------------------------------------------------------------
+File offset: 00004000h
+PV OS header
+----------------------------------------------------------------
+Checksum: DB38h
+0000h: PVOS signature		CASIOPVOS200
+000Ch: This section's length?	0005h, 00000A00h
+000Eh: ?			C000h
+0010h: ?			00000000h
+0014h: ?			FFFFFFFFh
+0018h: Some signature?		G502
+001Ch: Creation year		2002
+001Eh:  - month			10
+001Fh:  - day			25
+0020h:  - hour			09
+0021h:  - minute		48
+0022h:  - second		42
+0023h: ?			00
+0024h: Version			0103h, 001.003
+0026h: ?			0000h
+0028h: ?			0206EC40h
+01FEh: Checksum			DB38h
+----------------------------------------------------------------
+
+The structure type here is listed as "PV OS header," followed by the calculated
+structure checksum (Checksum: DB38h) and then a description of the structure's elements.
+At the beginning of each line, the first word represents the hexadecimal offset
+of the element from the start of the structure (not the start of the file).
+The second column lists the presumed purpose of the structure elements;
+the third column shows the value taken from the file; and the fourth column
+(where applicable) provides an interpretation of that value, separated by a comma.
+
+PVOS signature.
+
+Located at the very beginning of the structure, it consists of the 12-byte
+string "CASIOPVOS200".
+
+The word at hexadecimal offset 0Ch is best interpreted as the number of sectors
+allocated (or required for allocation) on the storage medium (in this case, flash
+memory) to accommodate the secondary PV-OS header.
+When multiplied by 512 (fourth column), the result matches—down to the exact byte—
+the offset from the beginning of the secondary header to the start of the
+executable code. However, this could be a coincidence.
+
+The purpose of the word at hexadecimal offset 0Eh and the double-words at
+hexadecimal offsets 10h and 14h is unclear.
+
+A four-byte signature, "G502", is found at hexadecimal offset 18h.
+Its purpose is unclear. A similar signature, "G500", appears in the PV-OS
+for the Casio PV-S x50/x60 series. It may be an internal designation for the
+specific model for which the PV-OS was created.
+
+PV-OS compilation date, 7 bytes in BCD format.
+
+The bytes at addresses 1Ch–22h contain BCD-encoded information regarding the
+PV-OS creation date. They are arranged in the following order:
+
+001Ch: Creation year		2002		PV-OS compilation year
+001Eh:	- month 		12		- month
+001Fh:	- day			11		- day
+0020h:	- hour			15		- hour
+0021h:	- minute		59		- minute
+0022h:	- second		02		- second
+
+It is quite possible that the byte at address 23h represents hundredths of a
+second, but since it is always zero, this interpretation is of little significance.
+BCD encoding means that the upper 4 bits of the byte encode the tens digit
+of a two-digit decimal number, while the lower 4 bits encode the units digit.
+Thus, the value 12h (which equals decimal 18) should be interpreted as 12.
+
+The word at offset 24h contains the PV-OS version. The high byte of the word
+stores the version number itself (the part before the dot), while the low byte
+stores the sub-version (the part after the dot); for example, the word "0A0B"
+should be interpreted as "10.11".
+
+The purpose of the word at offset 26h and the double word at offset 28h
+is unclear. The double word at offset 28h varies across different versions
+of PV-OS; it may be a checksum, but exactly what is being calculated—and how—
+remains unclear.
+
+The area following this, up to offset 1FEh, is filled with FFh, while the word
+at offset 1FEh stores the primary header checksum. This checksum is calculated
+as the simple sum of the first 510 bytes (treated as words, with the high byte
+zero-extended).
+
+
+Structure of BIOS function handling vectors.
+
+Находится в файле по смещению 4200 шестнадкатиричное (а в работающей PV-OS
+address 1000h). Look like the following:
+
+----------------------------------------------------------------
+File offset: 00004200h
+BIOS vectors
+----------------------------------------------------------------
+000Ch: Function's table 00 8C07BEF4h, 0005C0F4h
+001Ch: Function's table 01 8C078E14h, 00059014h
+002Ch: Function's table 02 8C07A904h, 0005AB04h
+003Ch: Function's table 03 8C07A460h, 0005A660h
+004Ch: Function's table 04 8C078E38h, 00059038h
+005Ch: Function's table 05 8C078480h, 00058680h
+006Ch: Function's table 06 8C07F85Ch, 0005FA5Ch
+007Ch: Function's table 07 8C078900h, 00058B00h
+008Ch: Function's table 08 8C07C024h, 0005C224h
+009Ch: Function's table 09 8C07D3D0h, 0005D5D0h
+00ACh: Function's table 0A 8C078918h, 00058B18h
+00BCh: Function's table 0B 8C078798h, 00058998h
+00CCh: Function's table 0C 8C078770h, 00058970h
+00DCh: Function's table 0D 8C07845Ch, 0005865Ch
+00ECh: Function's table 0E 8C07F840h, 0005FA40h
+00FCh: Function's table 0F 8C07FB90h, 0005FD90h
+----------------------------------------------------------------
+
+Here, the structure type is listed as "BIOS vectors," followed by descriptions of the structure elements.
+At the beginning of each line, the first word represents the hexadecimal offset of the element from the start of the structure (not the start of the file). The second column lists the presumed purpose of the structure elements; the third shows the value taken from the file; and the fourth (if present) provides an interpretation of that value, separated by a comma.
+
+The BIOS function handling vectors (16 in total) are identical in structure:
+
+0000	mov.l	@(8,pc),r2	; Retrieve function table address
+0002	shll2	r0		; Shift function number left by 2 bits (* 4)
+0004	mov.l	@(r0,r2),r0	; Retrieve function pointer from table
+0006	jmp	@r0		; Jump to that address
+0008	nop			; Placeholder for delay slot
+000С	data.l	h'8C07BEF4	; Function table address
+
+...and differ only in the address of the table from which the function pointers are retrieved.
+It is precisely these addresses that appear in the third column of this structure,
+while the fourth column lists their offsets within the PV-OS image file.
+
+
+Structure of the executable file's C_binaryinfo section.
+
+Indicates the presence of an executable module, driver, or application. It is
+structured as follows:
+
+----------------------------------------------------------------
+File offset: 0005A8E0h
+PVA C_binaryinfo section
+----------------------------------------------------------------
+0000h: Signature		#PVOSAPL
+0009h: Header version? 		01
+000Ah: ? 			0000h
+000Ch: Signature? 		Z000
+0010h: ASCII name		ExtKeyDriver
+0020h: ? 			FFFFFFFFh
+0024h: ? 			00000000h
+0028h: Some flags? 		40000011h
+002Ch: Install program		8C048BFCh, 00028DFCh
+0030h: Uninstall program	8C048C00h, 00028E00h
+0034h: Application entry	8C048BC0h, 00028DC0h
+0038h: Driver entry		8C048CF4h, 00028EF4h
+003Ch: UNICODE name		SYSTEM EXTKEY
+----------------------------------------------------------------
+The structure type here is "PVA C_binaryinfo section"; descriptions of the
+structure elements follow.
+At the beginning of each line, the first word is the hexadecimal offset of the
+element from the start of the structure (not from the start of the file).
+The second column lists the presumed purpose of the structure elements;
+the third column shows the value taken from the file; and the fourth column
+(if present), following a comma, provides an interpretation of the value.
+
+At the very beginning of the structure lies a signature, consisting of the 9-byte
+null-terminated string "#PVOSAPL".
+
+The byte at offset 0x09 is always 1; by analogy with the ELF header,
+it may represent the header version.
+
+The purpose of the word at offset 0x0A (hex) is unclear.
+
+A four-byte signature, "Z000", is located at offset 0x0C (hex).
+Its purpose is unclear.
+
+The program name is located at offset 0x10 (hex). It appears as a null-terminated
+text string. The maximum name length is 15 characters. It may be absent,
+especially in PVA files.
+
+The purpose of the double words at offsets 0x20 and 0x24 (hex) is unclear.
+The double word at offset 0x24 (hex) somewhat resembles a set of bit flags.
+
+The doubleword at offset 0x28 most closely resembles a set of bit flags; it varies from module to module, but the purpose of the bits is not entirely clear.
+
+The doubleword at offset 0x2C stores the address of the program initialization routine (`__$_install_program`), which is called before the program actually starts. The fourth column lists the corresponding file offset for this address.
+
+The doubleword at offset 0x30 stores the address of the routine called after the program terminates (`__$_uninstall_program`). The fourth column lists the corresponding file offset for this address.
+
+The doubleword at offset 0x34 stores the application's start address (`_main`); for drivers, this value is 0. The fourth column lists the corresponding file offset for this address.
+
+The doubleword at offset 0x38 stores the driver's entry point address; for applications, this value is 0. The fourth column lists the corresponding file offset for this address.
+
+The program name in Unicode is located at hex offset 3C. Strictly speaking,
+it does not belong to the `C_binaryinfo` section structure but rather to the
+`C_programinfo` section that follows it (though this is generally not the
+case for built-in drivers and applications); nevertheless, it is highly
+useful for module identification.
+
+
+File directory section structure.
+
+Describes the location and structure of files (executable modules, drivers,
+resources, etc.) within the PV-OS image file. It is structured as follows:
+
+----------------------------------------------------------------
+File offset: 00083FF0h
+PV OS Root directory
+----------------------------------------------------------------
+0000h: Signature		PVOS20-VALIDAREA
+...
+
+0090h: Directory ID		0002h
+0092h: Placed in directory	FFFFh, Unknown
+0094h: File name		resources
+00B4h: Start sector, offset	00000000h, 00000000h
+00B8h: Allocated sectors	00000000h
+00BCh: Length in bytes		00000000h
+00C0h: Creation year		2002
+00C2h:  - month			12
+00C3h:  - day			11
+00C4h:  - hour			09
+00C5h:  - minute		48
+00C6h:  - second		12
+00C7h: ?			00
+00C8h: Flags?			80000316h
+00CCh: ?			00000000h
+...
+
+0110h: Directory ID		FFFFh
+0112h: Placed in directory	0002h, resources
+0114h: File name		font00.res
+0134h: Start sector, offset	00000460h, 0008C000h
+0138h: Allocated sectors	00000040h
+013Ch: Length in bytes		00000C82h
+0140h: Creation year		2002
+0142h:  - month			06
+0143h:  - day			21
+0144h:  - hour			10
+0145h:  - minute		04
+0146h:  - second		46
+0147h: ?			00
+0148h: Flags?			0000010Ch
+014Ch: ?			00000000h
+...
+----------------------------------------------------------------
+The structure type here is "PV OS Root directory," followed by
+descriptions of the structure's elements.
+At the beginning of each line, the first word represents the hexadecimal offset of the element
+from the start of the structure (not from the start of the file). The second column lists
+the presumed purpose of the structure elements; the third shows the value taken from
+the file; and the fourth (if present) provides an interpretation of that value, separated by a comma.
+
+At the very beginning of the structure lies a signature, consisting of
+the 16-byte string "PVOS20-VALIDAREA". It is quite possible that its presence at the start
+of the directory is coincidental, as it also appears elsewhere in the PV-OS image file.
+Furthermore, the offset specified in the boot sector (primary header) of the PV-OS image file
+points not to this signature, but to a location exactly 16 bytes later.
+
+Each directory element (entry) occupies 0x40 (decimal 64)
+bytes in the following order (offsets are relative to the start of the directory element):
+
+The word at offset 0 specifies the number identifying the directory (if the entry
+describes a directory) or is set to FFFF if the entry describes a file.
+
+The word at offset 2 contains the identifier of the directory containing
+the described file, or is set to FFFF if the file is located in the root (?).
+
+The UNICODE name of the file/directory is located at offset 4; the maximum name length
+is 16 characters (32 bytes).
+
+The double-word at offset 0x24 contains the offset in sectors from
+the beginning of the PV-OS image file to the start of the described file/directory. The fourth
+column lists the value of this word multiplied by 512—that is, the size in bytes.
+
+The double word at offset 0x28 is best interpreted as the number of sectors allocated (or required to be allocated) on the storage medium (in this case, flash memory) for the file or directory in question.
+
+The double word at offset 0x2C contains the length of the file or directory in question.
+
+File creation date, in 7-byte BCD format.
+
+The bytes at addresses 0x30–0x36 contain BCD-encoded information regarding the file or directory creation date. They are arranged in the following order:
+
+0030h: Creation year		2002
+0032h:	- month 		12
+0033h:	- day			11
+0034h:	- hour			15
+0035h:	- minute		59
+0036h:	- second		02
+
+It is quite possible that the byte at address 37h represents hundredths of a second,
+but since it is always zero, this interpretation is of little practical significance.
+The BCD encoding means that the upper 4 bits of the byte represent the tens digit
+of a two-digit decimal number, while the lower 4 bits represent the units digit.
+Thus, the value 12h (decimal 18) should be interpreted as 12.
+
+The doubleword at offset 38h appears to be a set of bit flags; it varies from
+record to record, but the specific function of the bits is not entirely clear.
+
+The purpose of the doubleword at offset 3C h is unclear.
+
+The space following the last directory entry up to the end of the area allocated
+for the directory (4000h bytes in total; see the primary header description) is
+filled with 0FFh bytes, except for the final 16 bytes of this space, which
+contain the 16-byte string "PVOS20-VALIDAREA".
+
+
+Structure of the header section of the PVA file.
+
+Describes the location and structure of the PVA file (implemented module) v
+PV-OS image files. Look like the following:
+----------------------------------------------------------------
+File offset: 00118000h
+PVA header
+----------------------------------------------------------------
+0000h: PVA signature 		PVAPLHEDV20
+000Ch: Header version? 		0001h
+003Ah: ? 			0001h
+003Ch: Offset to ELF 		000001A0h
+0040h: PVA mode 		0001h, PV
+0042h: PVA type 		0000h, Application
+0046h: ? 			0048h
+0048h: Program name 		P.Referencer
+0088h: Program version 		0100h, 001.000
+008Ah: Library version 		0100h, 001.000
+008Ch: ELF length 		000095E8h
+0090h: Creation year 		2002
+0092h: - month 			12
+0093h: - day 			11
+0094h: - hour 			09
+0095h: - minutes 		47
+0096h: - second 		12
+0097h: ? 			00
+0098h: ? 			0001h
+009Ah: Icon height 		001Ch, 28
+009Ch: Icon width 		002Dh, 45
+009Eh: ? 			0000h
+00A0h: Small icon height 	0014h, 20
+00A2h: Small icon width 	001Bh, 27
+00A4h: ? 			0000h
+00A6h: ? 			1200h
+----------------------------------------------------------------
+The structure type here is "PVA header," followed by descriptions of the structure's elements.
+At the beginning of each line, the first word is the hexadecimal offset of the element from the start of the structure (not the start of the file). The second column lists the presumed purpose of the structure elements; the third shows the value taken from the file; and the fourth (if present), separated by a comma, provides an interpretation of that value.
+
+PVA signature, ASCII, bytes 0–Bh
+
+Takes the form of the text string "PVAPLHEDV20", null-terminated.
+
+
+Header version? Word? (Byte?).
+
+The word at offset 0Ch (or the byte at offset 0Dh) is always 1.
+By analogy with the ELF header, this could be the header version.
+
+From this point up to offset 3Ah, the header is filled with zeros. The word at offset 3Ah
+(or the byte at offset 3Bh) is always 1. Its purpose is unclear.
+
+
+Offset to the ELF header, doubleword.
+
+The double-word at offset 3Ch stores the offset from the beginning of the file to the ELF header.
+It can take one of three values:
+1) 0A8h (if the file contains no icons),
+2) 150h (if the file contains only a large icon),
+3) 1A0h (if the file contains both icons).
+
+
+File type, word.
+
+The word at offset 40h contains the file type. The setheader.exe program from the
+PV-S1600 SDK describes this as follows:
+-m[1-3]   : program mode [1:PV,2:CP,3:PV/CP]
+PV presumably stands for Pocket Viewer; the meaning of the other values ​​is unclear.
+In modules extracted from the operating system file, this word is found to have a value of 5.
+This may indicate a system-embedded executable module.
+
+
+File type, word.
+
+The word at offset 42h contains the file type. The setheader.exe program from the
+PV-S1600 SDK describes this as follows:
+-p[A|D]   : program type A=Application , D=Driver
+The possible values ​​for this word are:
+	0  - corresponds to Application,
+	2 - Driver.
+
+
+The word at offset 46h (or the double-word at offset 44h) is always 48h.
+It is unclear what this represents. By analogy with the ELF header, it could be the offset to
+the start of the name.
+
+
+Program name, ASCII, bytes 48h–87h
+
+This takes the form of a null-terminated text string containing the program name.
+The maximum name length is 31 characters. The remaining 32 bytes (at addresses 68h–87h)
+are always 0; this is the remainder of the buffer allocated for a 31-character Unicode name,
+because the `putname.exe` program from the PV-S1600 SDK can place the name in the header
+using either single-byte or double-byte encoding.
+
+
+Program version, word.
+
+The word at offset 88h contains the program version. The `setheader.exe` program from the
+PV-S1600 SDK describes this as follows:
+	-vpMMNN   : program version
+Here, the high byte of the word stores the version itself (the part before the dot, or
+the "MM" in the key), while the low byte stores the sub-version (the part after the dot, "NN");
+for example, the word "0A0B" should be interpreted as "10.11".
+
+
+Program library version, word.
+
+The word at offset 8Ah contains the program's library version. The
+setheader.exe program from the PV-S1600 SDK describes this as follows:
+	-vlMMNN   : library version
+Here, the high byte of the word stores the version itself (the part before the
+dot, or MM in the key), while the low byte stores the sub-version (the part
+after the dot, NN); for example, the word "0E11" should be interpreted as "14.17".
+
+
+ELF body length, doubleword.
+
+The doubleword at offset 8Ch stores the length of the ELF body—that is, the
+number of bytes from the start of the ELF header to the end of the file.
+Thus, the total file length must equal:
+	the content of the doubleword at offset 3Ch (ELF start) +
+	+ the content of the doubleword at offset 8Ch (ELF length).
+
+
+File compilation date, 7 bytes in BCD format.
+
+The bytes at addresses 90h–96h contain BCD-encoded information about the file's
+creation date—specifically, the date and time when the file's header was
+created. They are arranged in the following order:
+
+0090h: Creation year		2002		Program compilation year
+0092h:	- month 		12		- month
+0093h:	- day			11		- day
+0094h:	- hour			15		- hour
+0095h:	- minute		59		- minute
+0096h:	- second		02		- second
+
+It is quite possible that the byte at address 97h represents hundredths of a
+second, but since it is always zero, this interpretation is of little significance.
+BCD encoding means that the upper 4 bits of the byte encode the tens digit
+of a two-digit decimal number, while the lower 4 bits encode the units digit.
+Thus, the value 12h (decimal 18) should be interpreted as 12.
+
+The word at offset 98h is always 1. Its purpose is unclear.
+
+The words at addresses 9Ah–9Ch contain the height and width of the large icon,
+respectively. Both values ​​are in pixels. If the large icon is missing, both
+words are set to FFFFh. The size of the large icon is always 28x45.
+
+The word at offset 9Eh is always 0. Its purpose is unclear.
+
+The words at addresses A0h–A2h contain the height and width of the small icon,
+respectively. Both values ​​are in pixels. If the small icon is missing, both
+words are set to FFFFh. The size of the small icon is always 20x27.
+
+The word at offset A4h is always 0. It is unclear what this represents.
+
+The word at offset A6h is usually 0, though other values ​​are sometimes encountered.
+It is unclear what this represents.
+
+
+Following the PVA header in the output file are the icon dumps (if the file contains them).
+This is useful for identifying the module. It looks like this:
+
+----------------------------------------------------------------
+00A8h: Icon 28x45
+	......█████████████████.........................
+	......█...............█.........................
+	......█...............█.███.....................
+	......█...████..█████.██...███..................
+	......█..█..█.█.......█.......███...............
+	......█.█...█..█.███.█..███......███............
+	.....█..█..█...█....█......███......███.........
+	.....█...█.█..█....█....██....███......█........
+	.....█....████....█....██..██....█....█.█.......
+	.....█...........█........██..██...███..█.......
+	.....█..........█............██.....███.█.......
+	.....█..██.███.█..███..............█..█.█.......
+	.....█........█......███........███...███.......
+	....█..████..█..███.....███......███..██........
+	....█.......█......███.....█....█..█..█.........
+	....█......█..........███....███...█.██.........
+	....█.......███..........██...███..███..........
+	....█..........███...........█..█..█............
+	....█.............███.....███...█.██............
+	....██████████████...███...███..███.............
+	.......█.█.████...███..████..█..██.█.█..........
+	..█.█.█.█.██...███...███.██..█.██.█.█.█.█.█.....
+	.█.█.█.█.█.████...███..█.██..███.█.█.█.█.█.█....
+	█.█.█.█.█.█.█.████...██.█.█..██.█.█.█.█.█.█.█...
+	.█.█.█.█.█.█.█.█.████....██.██.█.█.█.█.█.█.█....
+	..█.█.█.█.█.█.█.█.█.████..███.█.█.█.█.█.█.█.....
+	.......█.█.█.█.█.█.█.█.█████.█.█.█.█.█..........
+	............█.█.█.█.█.█.█.█.█.█.█...............
+----------------------------------------------------------------
+0150h: Icon 20x27
+	██████████████..................
+	█............█..██..............
+	█..███..████.█.█..██............
+	█.█..██......██.....██..........
+	█.█.█.█.███..█........██........
+	█.██..█.....█...██......██......
+	█..███.....█......██......█.....
+	█.........█..██.....█....██.....
+	█.██.█████.....██.....███.█.....
+	█.......█...██...██....██.█.....
+	█.████.█......██....███.█.█.....
+	█......███......█....██.██......
+	█.........██......███.█.█.......
+	█...........██.....██.███.......
+	████████████████..█.█.█.........
+	.......██.█.█.█.██..███.........
+	.........███.█.█.█..█...........
+	...........██.█.██.██...........
+	.............███.██.............
+	...............███..............
+----------------------------------------------------------------
+Both icons may be present, there may be one large one, or both may be absent.
+----------------------------------------------------------------
+O'Razoff, razoff@mail.ru, 2:5026/14
+
