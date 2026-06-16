@@ -1,0 +1,58 @@
+LSB<->MSB converter; Copyright (c) 2004 by O'Razoff. V1.0
+
+This program is designed to convert binary files from LSB (Little-endian)
+format to MSB (Big-endian) and/or vice versa.
+
+Program usage:
+
+l2m [-s] [-a] [-w] file.in file.out
+-s strip 16-byte header [no]
+-a add 16-byte header [no]
+-w word alignment [long]
+
+Here, file.in is the input file and file.out is the output file.
+The flags are optional; for example, the program can be run like this:
+
+l2m file.in file.out
+
+In this case, the input file is converted to the output file with long-word (4-byte) alignment; no header is added or removed.
+
+
+Program options:
+
+The -S (Strip) option removes the first 16 bytes of the input file (the header for the PV OS of the PV-S1600 emulator, for which this program was originally written). It is relevant only when converting the emulator file (CasioNAND.mem) into a binary file for analysis. Example of using the option:
+
+l2m -s CasioNAND.mem pvos_sim.bin
+
+The -A (Add) flag adds the PV OS header for the PV-S1600 emulator
+(the system for which this program was originally written) to the output file;
+it is relevant only when converting a binary file containing the PV-OS 1600
+image into the emulator file format (CasioNAND.mem). Example usage:
+
+l2m -a pvos_sim.bin CasioNAND.mem
+
+
+The -W (Word alignment) flag sets data alignment to word (2 bytes).
+This means that if the byte order in the input file is 1234, the output
+will be 2143. By default, data is assumed to be aligned to a long word (4
+bytes) — meaning that if the input byte order is 1234, the output will be 4321.
+Example usage:
+
+l2m -w file.in file.out
+
+
+Program messages.
+
+If the program terminates successfully, no messages are displayed, and
+the output file is created. The following messages may appear:
+
+I/O error. 	- file read/write error.
+
+If incorrect parameters are specified, the following message appears:
+
+l2m [-s] [-a] [-w] file.in file.out
+-s strip 16-bytes head [no]
+-a add 16-bytes head [no]
+-w word alignment [long]
+
+O'Razoff, razoff@mail.ru, 2:5026/14
