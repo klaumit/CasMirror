@@ -1,0 +1,43 @@
+PVA Destructor; Copyright (c) 2004 by O'Razoff. V1.0
+
+This program is designed to split CASIO PV-S1600 PVA executable files
+into their constituent parts. This is useful, for example, for IDA — which
+disassembles the RLD format much more effectively than PVA — or for
+replacing icons, etc.
+
+Program usage:
+
+pvad [-i] input.pva output.rld
+-i extract icons [no]
+
+This means that `input.pva` is the input file in PVA format, and `output.rld` is the
+output file in RLD format.
+The argument is optional; that is, the program can be run like this:
+
+pvad input.pva output.rld
+
+In this case, the input file is converted to the output file, and no icon
+extraction is performed.
+
+Program switch descriptions.
+
+The -I (Icons) switch enables icon extraction. Icons (if present in the input
+file) are created with the filenames iconb.bmp (large icon) and iconl.bmp (small icon).
+Example of switch usage:
+
+pvad -i input.pva output.rld
+
+
+Program messages.
+
+If the program terminates successfully, no messages are displayed, and the output files are created. The following messages may appear:
+
+Bad PVA file. 	- Invalid input file; incorrect signature.
+I/O error. 	- File read/write error.
+
+If incorrect parameters are specified, the following message appears:
+
+pvad [-i] input.pva output.rld
+-i extract icons [no]
+
+O'Razoff, razoff@mail.ru, 2:5026/14
