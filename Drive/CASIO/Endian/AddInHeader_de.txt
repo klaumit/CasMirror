@@ -1,0 +1,242 @@
+Add-In Header
+
+Autor: J. Steingräber
+Datum: 23.02.2002
+
+
+Haftungausschluss
+
+All diese Informationen beruhen nur auf Beobachtungen. Es gibt keine
+Garantie, dass sie tatsächlich richtig sind. Benutzung auf eigene
+Gefahr.
+
+
+Beispiel-Hexdump eines Add-In-Headers nach der Kompilation
+
+00000000 00FF 4341 5349 4F03 5A34 3836 3031 3030 ..CASIO.Z4860100
+00000010 0101 FF08 5465 7874 5669 6577 6572 00FF ....TextViewer..
+00000020 FFFF FFFF 94F2 0000 3230 3032 3032 3139 ........20020219
+00000030 3132 3436 3031 3230 3230 3030 3032 3135 1246012020000215
+00000040 3039 3430 3031 3030 90F1 0000 40F2 0000 09400100....@...
+00000050 4865 7265 2063 6F6D 6D65 6E74 7320 6172 Here comments ar
+00000060 6520 7374 6F72 6564 00FF FFFF FFFF FFFF e stored........
+00000070 FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF ................
+00000080 FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF ................
+
+
+Add-In-Header als C-Struktur
+
+struct addinheader
+{
+  char addinsig[8]; /* = {0x00, 0xFF, 'C','A','S','I','O', 0x03}; */
+  char model[4]; /* = {'Z','4','8','6'}; */
+  char headerversion[4]; /* = {'0','1','0','0'}; */
+  unsigned short status;
+  unsigned short mode;
+  char addinname[16];
+  unsigned long addinlength;
+  char compiledate[8]; /* e.g. "20020219" stands for Feb. 19th, 2002 */
+  char compiletime[4]; /* e.g. "1246" is 46 minutes past 12 o'clock */
+  char version[4]; /* "0120" stands for version 1.20 */
+  char libdate[8]; /* e.g. "20000215" stands for Feb. 15th, 2000 */
+  char libtime[4]; /* e.g. "0940" is 40 minutes past 9 o'clock */
+  char libver[4]; /* e.g. "0100" stands for version 1.00 */
+  unsigned long offsicon;
+  unsigned long offslicon;
+  char comment[64];
+};
+
+
+Felder im Add-In-Header
+
+Der Add-In-Header beginnt mit einer feststehenden Signatur von 8 Bytes
+(Offset 0x0000).
+
+Bei installierten Add-Ins wird das zweite Byte (0xFF) als Flag für
+"gelöscht" benutzt. Bei gelöschten Add-Ins ist dieses Byte auf 0x00
+gesetzt.
+
+Vier Bytes dienen der Modellbeschreibung (Offset 0x0008).
+
+Beobachtete Werte sind "Z486" für Add-Ins, die auf jedem Modell
+funktionieren, "Z488" für Add-Ins, die nur auf einem PV 750(+)
+funktionieren, "G500" für Add-Ins, die ausschließlich auf einem
+PV-S460/S660 funktionieren.
+
+PVM.exe überprüft diesen Wert und verweigert die Installation von
+Add-Ins, die nicht zum PV passen.
+
+Vier Bytes beschreiben wahrscheinlich die Version des Headers als
+ASCII-Repräsentation (Offset 0x000C). Nur der Wert "0100" wurde hier
+bisher beobachtet.
+
+Zwei Bytes repräsentieren den Status des Add-Ins (Offset
+0x0010). Reguläre Add-Ins haben immer den Status 0x0101. Innerhalb des
+PVOS können außerdem die Werte 0xFF01, 0xFF02 und 0xFF81 gefunden
+werden.
+
+Weitere zwei Bytes repräsentieren den Haupt- und Untermodus des
+Add-Ins (Offset 0x0012).
+
+Der Modus eines Add-Ins (wie es vom SDK produziert wird) ist immer
+0x08FF, bestehend aus dem Hauptmodus 0x08 und einem undefinierten
+Untermodus. Der Untermodus wird während der Installation in einen Wert
+von 0x01 bis 0x0F verändert.
+
+Der Name des Add-Ins wird in 16 Bytes gespeichert (Offset 0x0014), er
+muss mit 0x00 abgeschlossen sein, so dass der längstmögliche Name 15
+Zeichen lang ist.
+
+Ein double word enthält die Länge des Add-Ins (Offset 0x0024).
+
+Das Datum der Kompilierung ist als ASCII-Repräsentation des Jahres,
+des Monats und des Tages gespeichert (Offset 0x0028).
+
+Die Uhrzeit der Kompilierung ist als ASCII-Repräsentation der Stunde
+und der Minuten gespeichert (Offset 0x0030).
+
+Die Version des Add-Ins ist als ASCII-Repräsentation einer
+vierstelligen Zahl gespeichert (Offset 0x0034).
+
+Die Library, die vom Add-In benutzt wird, wird gekennzeichnet durch
+ihr Erstellungdatum, die Erstellungszeit und die Version. Dies
+geschieht im gleichen Format, wie es zur Darstellung der Kompilierung
+des Add-Ins benutzt wird.
+
+Das Datum der Library ist in acht Bytes enthalten (Offset 0x0038).
+
+Die Uhrzeit ist in vier Bytes enthalten (Offset 0x0040).
+
+Die Version der Library ist in vier Bytes enthalten (Offset 0x0044).
+
+Der nächste double word Wert ist der Offset des Icons relativ zum
+Beginn des Add-In-Headers (Offset 0x0048).
+
+Der nächste double word Wert ist der Offset des List-Icons relativ zum
+Beginn des Add-In-Headers (Offset 0x004C).
+
+Die übrigen Bytes bis zum Offset 0x0100 sind normalerweise mit 0xFF
+vorbelegt. Die ersten 64 Bytes werden für den Kommentar benutzt, den
+man bei der Installation mit PVM.exe eingeben kann. Wiederum muss
+dieser Kommentar mit 0x00 abgeschlossen sei, so dass man keinen
+Kommentar benutzen kann, der länger als 63 Zeichen ist.
+
+
+Auf den Add-In-Header bezogene Library Funktionen
+
+LibGetUserMode() liefert der Reihe nach Modus und Status aller
+installierten (Benutzer-)Add-Ins.
+
+LibGetMode() liefert den Modus des gerade laufenden Add-Ins. Obwohl
+diese Funktion ebenfalls ein Status-Word zurückgibt, ist dies nicht
+identisch mit dem des Headers.
+
+LibGetProgramName() kann benutzt werden, um den Namen eines
+installierten Add-Ins zu ermitteln.
+
+LibGetLibVer() liefert die Aneinanderreihung der Felder libdate,
+libtime und libver.
+
+LibGetMenuIcon() liefert einen Zeiger auf das Icon eines Add-Ins.
+
+LibGetListIcon() liefert einen Zeiger auf das List-Icon eines Add-Ins.
+
+Achtung: die Zeiger, die von LibGetMenuIcon() oder LibGetListIcon()
+zurückgeliefert werden sind nur solange garantiert gültig, bis eine
+andere Library-Funktion aufgerufen wird! Am besten ist es, den Zeiger
+zu ermitteln und sofort entweder zum Zeichnen des Icons mittels
+LibPutGraph() zu verwenden oder die Daten in einen eigenen Puffer
+mittels far_memcpy() zu übertragen.
+
+
+Beispiel Code
+
+Diese Funktion benutzt die oben genannten Library-Funktionen um
+Informationen über die installierten Add-Ins zu erhalten.
+
+void ListAddIns()
+{
+  word mode_code;
+  byte main_code, sub_code;
+  word status;
+  char name[16];
+  char ver_str[17];
+  byte far *pMenuIcon;
+  byte far * pListIcon;
+  byte condition;
+  char text[80];
+  
+  condition = IB_DLFIRST_SRCH;
+  
+  while (1)
+  {
+      /* get mode information */
+    LibGetUserMode(&mode_code,&status,condition);
+
+      /* stop if there is no further Add-In */
+    if(mode_code==0xffff) break;
+
+    condition=IB_DLNEXT_SRCH;
+
+     /* split up mode information into main and sub mode */
+    main_code = mode_code >> 8;
+    sub_code = mode_code;
+
+f     /* prepare display for icons */
+    LibClrDisp();
+
+    pMenuIcon = NULL;
+    if (LibGetMenuIcon(&pMenuIcon,main_code,sub_code) && (pMenuIcon != NULL))
+    {
+      LibPutGraph(0,0,pMenuIcon);
+    }
+
+    pListIcon = NULL;
+    i (LibGetListIcon(&pListIcon,main_code,sub_code) && (pListIcon != NULL))
+    {
+      LibPutGraph(0,30,pListIcon);
+    }
+    
+    sprintf(text,"mode_code %04X",mode_code);
+    LibPutProStr(IB_PFONT1,0,60,text,160);
+
+    sprintf(text,"status %04X",status);
+    LibPutProStr(IB_PFONT1,0,70,text,160);
+
+    name[0] = 0;
+    LibGetProgramName(name,main_code,sub_code);
+    if ((name[0] != 0x00) /* we get "something" */
+        && (name[0] != 0xFF)) /* but not hidden name of PVOS Add-In */
+    {
+      sprintf(text,"name %s",name);
+      LibPutProStr(IB_PFONT1,0,90,text,160);
+    }
+ 
+    ver_str[0] = 0;
+    if (LibGetLibVer(ver_str, main_code, sub_code)
+        && (ver_str[0] != 0x00))
+    {
+      sprintf(text,"ver_str %s",ver_str);
+      LibPutProStr(IB_PFONT1,0,100,ver_str,160);
+    }
+
+      /* dumb "wait for screen touch" function */
+    LibPutMsgDlg("");
+  };
+}
+
+
+Auf den Add-In-Header bezogene Konstanten (l_define.h)
+
+Die Datei "l_define.h" enthält einige Konstanten, die mit dem
+Add-In-Header zu tun haben. Im Abschnitt "MAIN MODE CODE" werden die
+Werte aufgelistet, die den Hauptmodus beschreiben. Zum Beispiel findet
+man dort die Konstante IB_MADDIN als 0x08 definiert.
+
+Ebenfalls dort lassen sich die Werte finden, die im Feld "mode" vom
+PVOS verwendet werden, zum Beispiel IW_MADDIN als 0x0800.
+
+Werte für die Untermodi hängen von ihrem Hauptmodus ab. Wie bereits
+oben erwähnt wird er Untermodus für Benutzer-Add-Ins während der
+Installation auf den nächsten freien (unbenutzten) Wert zwischen 0x01
+und 0x0F gesetzt.
