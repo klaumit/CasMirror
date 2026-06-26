@@ -1,0 +1,7 @@
+
+regsvr32 COMCT332.OCX
+regsvr32 COMDLG32.OCX
+regsvr32 MSCOMCT2.OCX
+regsvr32 MSCOMCTL.OCX
+
+
